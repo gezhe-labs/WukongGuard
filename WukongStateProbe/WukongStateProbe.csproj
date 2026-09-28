@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WukongStateProbe</AssemblyName>
+    <RootNamespace>WukongStateProbe</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProbeRuntime Condition="'$(ProbeRuntime)' == ''">false</ProbeRuntime>
+    <GameBin Condition="'$(GameBin)' == '' and '$(B1_DIRECTORY)' != ''">$(B1_DIRECTORY)\b1\Binaries\Win64</GameBin>
+  </PropertyGroup>
+
+  <Target Name="CheckReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GameBin)' == ''" Text="Set GameBin to the game's b1\Binaries\Win64 directory (or B1_DIRECTORY to the game root)." />
+    <Error Condition="!Exists('$(GameBin)\CSharpLoader\CSharpModBase.dll')" Text="CSharpModBase.dll is missing. Install B1CSharpLoader in GameBin first." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and '$(GameDll)' == ''" Text="Set GameDll to the directory holding the matching GameDll reference assemblies." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and !Exists('$(GameDll)\b1.Native.dll')" Text="GameDll\b1.Native.dll is missing; use the reference set matching the installed game build." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and !Exists('$(GameDll)\BtlSvr.Main.dll')" Text="GameDll\BtlSvr.Main.dll is missing." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and !Exists('$(GameDll)\GSE.Core.dll')" Text="GameDll\GSE.Core.dll is missing." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and !Exists('$(GameDll)\Protobuf.RunTime.dll')" Text="GameDll\Protobuf.RunTime.dll is missing." />
+    <Error Condition="'$(ProbeRuntime)' == 'true' and !Exists('$(GameDll)\UnrealEngine.Runtime.dll')" Text="GameDll\UnrealEngine.Runtime.dll is missing." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="CSharpModBase">
+      <HintPath>$(GameBin)\CSharpLoader\CSharpModBase.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(ProbeRuntime)' == 'true'">
+    <DefineConstants>$(DefineConstants);RUNTIME_PROBE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ProbeRuntime)' == 'true'">
+    <Reference Include="BtlSvr.Main">
+      <HintPath>$(GameDll)\BtlSvr.Main.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GSE.Core">
+      <HintPath>$(GameDll)\GSE.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Protobuf.RunTime">
+      <HintPath>$(GameDll)\Protobuf.RunTime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="b1.Native">
+      <HintPath>$(GameDll)\b1.Native.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnrealEngine.Runtime">
+      <HintPath>$(GameDll)\UnrealEngine.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnrealEngine">
+      <HintPath>$(GameDll)\UnrealEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

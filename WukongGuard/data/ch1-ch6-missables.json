@@ -1,0 +1,191 @@
+{
+  "SchemaVersion": 1,
+  "ReviewedOn": "2026-09-27",
+  "Purpose": "用户指定的永久遗漏关系基准；运行时规则采用章节、地图、坐标和周目识别的风险地点检查，尚未读取对应周目完成状态，触发坐标待实机校准",
+  "PrimarySource": {
+    "Title": "错过就无法完成的任务.md",
+    "Kind": "用户提供的视频口述转写稿",
+    "Sha256": "C6DBDCDECB1C43EF24054ED027A7A02B7040EC5FB28F7A616700739614FF89D5",
+    "ReferenceUrl": "https://my.feishu.cn/docx/UT82dwuo7oW7Woxlt0pc36FJnlc",
+    "ScopeNote": "稿件按第一至第五章讲述七类错过内容，第六章未提出新增条目；不能据此证明六章全量完整"
+  },
+  "NameCorrections": [
+    {
+      "Transcript": "无量符",
+      "Normalized": "无量蝠"
+    },
+    {
+      "Transcript": "四魅",
+      "Normalized": "四妹"
+    },
+    {
+      "Transcript": "独帝大王",
+      "Normalized": "毒敌大王"
+    },
+    {
+      "Transcript": "秽月魔君",
+      "Normalized": "晦月魔君"
+    },
+    {
+      "Transcript": "迷道人",
+      "Normalized": "糜道人"
+    },
+    {
+      "Transcript": "藕包",
+      "Normalized": "藕雹"
+    }
+  ],
+  "ChapterCoverage": [
+    {
+      "Chapter": 1,
+      "SourceEntryCount": 1
+    },
+    {
+      "Chapter": 2,
+      "SourceEntryCount": 1
+    },
+    {
+      "Chapter": 3,
+      "SourceEntryCount": 1
+    },
+    {
+      "Chapter": 4,
+      "SourceEntryCount": 3
+    },
+    {
+      "Chapter": 5,
+      "SourceEntryCount": 1
+    },
+    {
+      "Chapter": 6,
+      "SourceEntryCount": 0,
+      "Note": "原文没有第六章的新失效关系，不能推断第六章没有遗漏点。"
+    }
+  ],
+  "Missables": [
+    {
+      "Id": "ch1_wandering_wight_before_secret_boss",
+      "Chapter": 1,
+      "MustDoFirst": "击败幽魂；已击败但未拾取的精魄可另行回收",
+      "ClaimedLockout": "完成三钟隐藏支线后幽魂消失；独立攻略将更精确的节点写作击败金池长老",
+      "LossThisCycle": [
+        "幽魂精魄和该头目战奖励"
+      ],
+      "SourceTime": "00:00:00–00:00:41",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-boss-guide-all-bosses/"
+      ],
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch1_wight_before_secret_entry"
+    },
+    {
+      "Id": "ch2_second_rat_prince_spirit_order",
+      "Chapter": 2,
+      "MustDoFirst": "沙国王与沙二郎的双首领战中先击败沙国王，再击败沙二郎",
+      "ClaimedLockout": "先击败沙二郎并结束双首领战",
+      "LossThisCycle": [
+        "沙二郎精魄"
+      ],
+      "SourceTime": "00:01:53–00:03:37",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-boss-guide-all-bosses/"
+      ],
+      "Note": "口述还提到肉块；沙大郎战可由其他剧情方式触发，因此未把该战列为确定损失。攻略存在版本修复争议，需在当前游戏版本验证此击杀顺序是否仍永久影响精魄。",
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch2_rat_prince_spirit_order"
+    },
+    {
+      "Id": "ch3_apramana_bat_before_yellowbrow",
+      "Chapter": 3,
+      "MustDoFirst": "在苦海北岸挑战无量蝠",
+      "ClaimedLockout": "击败黄眉后无量蝠消失",
+      "LossThisCycle": [
+        "无量蝠独立首领战",
+        "相关图鉴条目机会"
+      ],
+      "SourceTime": "00:03:37–00:04:23",
+      "Note": "口述称无独家奖励；精魄是否通过后续剧情取得应与独立首领战区分。",
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch3_bat_before_yellowbrow"
+    },
+    {
+      "Id": "ch4_four_talismans_before_chapter_boss",
+      "Chapter": 4,
+      "MustDoFirst": "完成四妹的四道符箓互动与最后一场遭遇",
+      "ClaimedLockout": "击败第四章最终首领前完成；具体失效瞬间仍待校准",
+      "LossThisCycle": [
+        "四妹支线完成机会",
+        "相关成就与鹤仙人图鉴机会"
+      ],
+      "SourceTime": "00:04:23–00:07:10",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-all-side-quests/"
+      ],
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch4_talismans_before_final_boss"
+    },
+    {
+      "Id": "ch4_scorpionlord_before_duskveil_entry",
+      "Chapter": 4,
+      "MustDoFirst": "进入晦月魔君区域前完成毒敌大王首领战",
+      "ClaimedLockout": "触发晦月魔君首领战后毒敌大王消失",
+      "LossThisCycle": [
+        "毒敌大王独立首领战",
+        "相关奖励"
+      ],
+      "SourceTime": "00:07:10–00:07:49",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-boss-guide-all-bosses/"
+      ],
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch4_scorpionlord_before_duskveil"
+    },
+    {
+      "Id": "ch4_daoist_mi_before_duskveil_death",
+      "Chapter": 4,
+      "MustDoFirst": "取得藕雹并完成糜道人支线及首领战",
+      "ClaimedLockout": "击败晦月魔君后糜道人消失",
+      "LossThisCycle": [
+        "糜道人支线与首领战",
+        "藕雹变化"
+      ],
+      "SourceTime": "00:07:49–00:08:21",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-boss-guide-all-bosses/"
+      ],
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch4_daoist_mi_before_duskveil"
+    },
+    {
+      "Id": "ch5_horse_guai_before_keeper",
+      "Chapter": 5,
+      "SpansChapters": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "MustDoFirst": "逐章完成马天霸对话及第五章战车互动",
+      "ClaimedLockout": "击败火焰山土地后，先前未完成的支线进度可能无法推进",
+      "LossThisCycle": [
+        "马天霸连续支线完成机会",
+        "黯雷变化"
+      ],
+      "SourceTime": "00:08:21–00:10:48",
+      "CrossCheck": [
+        "https://www.powerpyx.com/black-myth-wukong-all-side-quests/"
+      ],
+      "Conflict": "口述把主要失效点放在第五章火焰山土地；另有攻略称每章对话须在进入下一章前完成。当前第三章提醒采用较早的风险窗口，准确锁定点需实机验证。",
+      "RuntimeMapping": "chapter/map/coordinate/NG+ count; per-cycle completion flag unverified",
+      "TriggerBoundary": "候选风险地点；未在当前周目验证是否先于剧情锁定",
+      "ReleaseRule": "ch5_horse_before_keeper"
+    }
+  ]
+}

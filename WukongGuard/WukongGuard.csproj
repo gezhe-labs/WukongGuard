@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WukongGuard</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);dist\**;dist-stage\**;.local-calibration\**</DefaultItemExcludes>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GameBin Condition="'$(GameBin)' == '' and '$(B1_DIRECTORY)' != ''">$(B1_DIRECTORY)\b1\Binaries\Win64</GameBin>
+  </PropertyGroup>
+  <Target Name="CheckReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GameBin)' == ''" Text="Set GameBin to the game's b1\Binaries\Win64 directory." />
+    <Error Condition="!Exists('$(GameBin)\CSharpLoader\CSharpModBase.dll')" Text="Install B1CSharpLoader first." />
+    <Error Condition="'$(GameDll)' == '' or !Exists('$(GameDll)\b1.Native.dll')" Text="Set GameDll to the extracted game reference assemblies." />
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="CSharpModBase"><HintPath>$(GameBin)\CSharpLoader\CSharpModBase.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BtlSvr.Main"><HintPath>$(GameDll)\BtlSvr.Main.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GSE.Core"><HintPath>$(GameDll)\GSE.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GSE.ProtobufDB"><HintPath>$(GameDll)\GSE.ProtobufDB.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Protobuf.RunTime"><HintPath>$(GameDll)\Protobuf.RunTime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Google.Protobuf"><HintPath>$(GameDll)\Google.Protobuf.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="b1.Native"><HintPath>$(GameDll)\b1.Native.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnrealEngine.Runtime"><HintPath>$(GameDll)\UnrealEngine.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnrealEngine"><HintPath>$(GameDll)\UnrealEngine.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

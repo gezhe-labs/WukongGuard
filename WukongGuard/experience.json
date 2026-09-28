@@ -1,0 +1,5 @@
+{
+  "Enabled": false,
+  "DevelopmentMode": false,
+  "Description": "发行默认关闭演示。开发校准时可同时将 Enabled 和 DevelopmentMode 设为 true。体验弹窗不表示当前位置有遗漏点。"
+}

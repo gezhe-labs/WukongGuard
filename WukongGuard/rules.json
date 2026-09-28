@@ -1,0 +1,245 @@
+{
+  "SchemaVersion": 2,
+  "Rules": [
+    {
+      "Id": "ch1_wight_before_secret_entry",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 10,
+      "MapId": 10,
+      "X": -13366,
+      "Y": 91992,
+      "Z": -1733,
+      "Radius": 3500,
+      "Spoilers": [
+        "若尚未击败幽魂，一旦进入旧观音禅院，幽魂将消失。",
+        "进入隐藏地区前，请先确认早期的一场头目战。",
+        "这场头目战位于苍狼林。",
+        "先击败幽魂，再敲完三口钟进入旧观音禅院；已击败但未拾取的精魄可在土地庙补领。"
+      ]
+    },
+    {
+      "Id": "ch2_rat_prince_spirit_order",
+      "Category": "missable",
+      "Enabled": true,
+      "RawChapter": 20,
+      "MapId": 20,
+      "X": -47868,
+      "Y": -12727,
+      "Z": 423,
+      "Radius": 5000,
+      "Spoilers": [
+        "若先击败沙二郎，沙国王会逃跑，沙二郎精魄将无法获得。",
+        "前方双首领战的击败顺序会影响奖励。",
+        "先击败体型较小的首领。",
+        "先击败沙国王，再击败沙二郎，取得沙二郎精魄。"
+      ],
+      "LocationCheckOnly": true
+    },
+    {
+      "Id": "ch3_bat_before_yellowbrow",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 30,
+      "MapId": 30,
+      "X": 16523,
+      "Y": -251164,
+      "Z": -28856,
+      "Radius": 1500,
+      "Spoilers": [
+        "击败黄眉后，无量蝠将消失，无法再挑战。",
+        "当前水岸有一场需要先完成的遭遇。",
+        "初到苦海北岸时，沿岸探索。",
+        "在击败黄眉前，到苦海北岸挑战无量蝠。"
+      ]
+    },
+    {
+      "Id": "ch4_talismans_before_final_boss",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 40,
+      "MapId": 40,
+      "X": 101340,
+      "Y": 139972,
+      "Z": 51775,
+      "Radius": 1500,
+      "Spoilers": [
+        "击败百眼魔君后，四符支线将无法完成。",
+        "挑战本章最终首领前，请检查四处符箓。",
+        "这关系到四妹与鹤仙人的支线。",
+        "先完成盘丝洞三道符箓，再到黄花观金光处完成第四道及后续战斗。"
+      ]
+    },
+    {
+      "Id": "ch4_scorpionlord_before_duskveil",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 40,
+      "MapId": 40,
+      "X": 11705,
+      "Y": 26040,
+      "Z": 5677,
+      "Radius": 1500,
+      "Spoilers": [
+        "进入晦月魔君区域后，毒敌大王将消失。",
+        "继续前请确认紫云山外围的一场头目战。",
+        "这场战斗与毒敌大王有关。",
+        "进入晦月魔君区域前，先在紫云山击败毒敌大王。"
+      ]
+    },
+    {
+      "Id": "ch4_daoist_mi_before_duskveil",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 40,
+      "MapId": 40,
+      "X": 11705,
+      "Y": 26040,
+      "Z": 5677,
+      "Radius": 1500,
+      "Spoilers": [
+        "击败晦月魔君后，糜道人支线将失效。",
+        "继续前请确认道院内还有没有未完成的委托。",
+        "这条支线会给予一种独家变化。",
+        "先与糜道人对话，取得藕雹并完成他的战斗，再挑战晦月魔君。"
+      ]
+    },
+    {
+      "Id": "ch5_horse_before_keeper",
+      "Category": "missable",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 50,
+      "MapId": 50,
+      "X": 4246,
+      "Y": 27307,
+      "Z": 17901,
+      "Radius": 1500,
+      "Spoilers": [
+        "击败火焰山土地后，未完成的马天霸支线将无法继续。",
+        "挑战前请确认跨章节角色的对话与本章互动。",
+        "这条支线起于第一章，并延续至第五章。",
+        "确认第一至四章马天霸对话完成，并在第五章完成战车互动，再挑战火焰山土地。"
+      ]
+    },
+    {
+      "Id": "hidden_ch1_old_guanyin",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 10,
+      "MapId": 10,
+      "X": 2986,
+      "Y": -15187,
+      "Z": 4650,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "第一章还有一处可回访的隐藏地区。",
+        "线索与黑风山的三口钟有关。",
+        "完成后可进入旧观音禅院。",
+        "在林外、蛇径、白雾泽附近找到并敲响三口钟，进入旧观音禅院。"
+      ]
+    },
+    {
+      "Id": "hidden_ch2_sahali",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 20,
+      "MapId": 20,
+      "X": -117731,
+      "Y": -20735,
+      "Z": 5468,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "第二章还有一处可回访的隐藏地区。",
+        "从挟魂崖附近的一条人物支线开始。",
+        "寻找黄袍员外可通往斯哈里国。",
+        "与黄袍员外交谈并交付醒酒石、碧藕，取得阿罗金片后返回挑战他。"
+      ]
+    },
+    {
+      "Id": "hidden_ch3_zodiac_village",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 30,
+      "MapId": 30,
+      "X": 16523,
+      "Y": -251164,
+      "Z": -28856,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "第三章还有一处可回访的隐藏地区。",
+        "苦海北岸的一位角色会引出这条路线。",
+        "完成辰龙支线可进入六六村。",
+        "在苦海北岸挑战辰龙，找戌狗取得丹药并交还辰龙。"
+      ]
+    },
+    {
+      "Id": "hidden_ch4_purple_cloud",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 40,
+      "MapId": 40,
+      "X": 130951,
+      "Y": 118551,
+      "Z": 47264,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "第四章还有一处可回访的隐藏地区。",
+        "线索与两次挑战同一位道人有关。",
+        "完成黑手道人支线可进入紫云山。",
+        "在盘丝洞和黄花观分别击败黑手道人，进入随后出现的壁画。"
+      ]
+    },
+    {
+      "Id": "hidden_ch5_bishui_cave",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 50,
+      "MapId": 50,
+      "X": 4246,
+      "Y": 27307,
+      "Z": 17901,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "第五章还有一处可回访的隐藏地区。",
+        "先推进皓斧力士与战车相关支线。",
+        "完成后可进入碧水洞。",
+        "击败主线战车并与皓斧力士持续对话，再从火光地寻找隐藏路线。"
+      ]
+    },
+    {
+      "Id": "hidden_late_meishan",
+      "Category": "hidden_area",
+      "Enabled": true,
+      "LocationCheckOnly": true,
+      "RawChapter": 50,
+      "MapId": 50,
+      "X": 33905,
+      "Y": 58556,
+      "Z": 36006,
+      "Radius": 1500,
+      "MovementSecondsBeforeTrigger": 3,
+      "Spoilers": [
+        "游戏后期还有一处可回访的隐藏地区。",
+        "它需要多个章节的隐藏进度作为前置。",
+        "完成瓜田支线及其他隐藏地区后，回访浮屠塔。",
+        "集齐避火罩、定风珠、绣花针，完成瓜田支线和碧水洞，再回浮屠塔进入梅山。"
+      ]
+    }
+  ]
+}

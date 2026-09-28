@@ -1,0 +1,54 @@
+{
+  "SchemaVersion": 1,
+  "ReviewedOn": "2026-09-27",
+  "PrimarySource": {
+    "Title": "防剧透的全隐藏地区指南 2026年9月27日.md",
+    "Sha256": "59E8BA748FEF4D6BA2BCC6C911375F2EB9795D0D107FEF132DBD2453645F1DB4",
+    "Kind": "用户提供的视频口述转写稿",
+    "ScopeNote": "原文明确称六处隐藏地区均可回访，不属于永久遗漏；以下触发坐标仍需实机校准。"
+  },
+  "HiddenAreas": [
+    {
+      "Id": "hidden_ch1_old_guanyin",
+      "Chapter": 1,
+      "Name": "旧观音禅院",
+      "Unlock": "敲响黑风山三口钟",
+      "SourceTime": "00:00:27–00:02:35"
+    },
+    {
+      "Id": "hidden_ch2_sahali",
+      "Chapter": 2,
+      "Name": "斯哈里国",
+      "Unlock": "完成黄袍员外支线",
+      "SourceTime": "00:02:35–00:05:25"
+    },
+    {
+      "Id": "hidden_ch3_zodiac_village",
+      "Chapter": 3,
+      "Name": "六六村",
+      "Unlock": "完成辰龙与戌狗支线",
+      "SourceTime": "00:06:48–00:08:24"
+    },
+    {
+      "Id": "hidden_ch4_purple_cloud",
+      "Chapter": 4,
+      "Name": "紫云山",
+      "Unlock": "两次挑战黑手道人",
+      "SourceTime": "00:08:24–00:14:16"
+    },
+    {
+      "Id": "hidden_ch5_bishui_cave",
+      "Chapter": 5,
+      "Name": "碧水洞",
+      "Unlock": "完成皓斧力士与战车支线",
+      "SourceTime": "00:14:16–00:17:22"
+    },
+    {
+      "Id": "hidden_late_meishan",
+      "Chapter": 5,
+      "Name": "梅山",
+      "Unlock": "集齐三法宝，完成瓜田支线和碧水洞后回访浮屠塔",
+      "SourceTime": "00:17:22–00:20:45"
+    }
+  ]
+}
