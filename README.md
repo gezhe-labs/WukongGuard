@@ -7,4 +7,12 @@ Windows PC 版《黑神话：悟空》的游戏内防遗漏提醒插件。运行
 - [WukongGuard 插件、规则与安装说明](WukongGuard/README.md)
 - [WukongStateProbe 运行时探针](WukongStateProbe/README.md)
 
+## 安装测试版
+
+从 GitHub Releases 下载 `WukongGuard-0.4.0-rc8-Setup.exe`，完全退出游戏后双击运行。安装器会尝试定位 Steam 游戏目录；找不到时可以手动选择 `BlackMythWukong` 文件夹。安装成功后通过 Steam 启动游戏。首次安装若缺少 B1CSharpLoader，安装器会从其作者的官方 Release 下载 v0.0.8，校验 SHA256 后安装，因此需要联网；已有 Loader 的配置会保留。覆盖层所需 .NET 运行环境已随 EXE 提供。
+
+这仍是 **测试版**：候选地点尚未全部实机验收，规则也无法可靠判定每项内容在当前周目是否已完成。下载前请阅读[当前规则和限制](WukongGuard/README.md)。
+
+开发者可运行 `WukongGuard.Installer/build.ps1`，把最新的 `WukongGuard/dist/WukongGuard-0.4.0-rc8-*.zip` 封装为单文件 EXE；ZIP 可由 `WukongGuard/release/build-package.ps1` 构建。
+
 本仓库只跟踪可公开的源码、规则和文档。构建需要开发者安装游戏并取得 B1CSharpLoader 引用程序集；游戏 DLL、SDK、存档、实机日志和发布产物不纳入 Git。安装包应单独作为 GitHub Release 附件提供。
