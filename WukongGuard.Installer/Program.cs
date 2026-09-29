@@ -59,7 +59,7 @@ internal sealed class InstallerForm : Form
 
         Controls.Add(new Label
         {
-            Text = "WukongGuard 0.4.0-rc8",
+            Text = "WukongGuard 0.4.0-rc9",
             Location = new Point(22, 18), Size = new Size(550, 30),
             Font = new Font("Microsoft YaHei UI", 15, FontStyle.Bold)
         });

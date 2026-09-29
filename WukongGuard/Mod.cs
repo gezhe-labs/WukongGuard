@@ -11,7 +11,7 @@ namespace WukongGuard
         private static int previewIndex;
 
         public string Name => "WukongGuard";
-        public string Version => "0.4.0-rc7";
+        public string Version => "0.4.0-rc9";
 
         public void Init()
         {

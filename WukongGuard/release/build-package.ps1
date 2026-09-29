@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $localDotnet) {
 $env:NuGetAudit = 'false'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$name = 'WukongGuard-0.4.0-rc8-' + $stamp
+$name = 'WukongGuard-0.4.0-rc9-' + $stamp
 $publish = Join-Path $repo ('WukongGuard\dist-stage\' + $name + '\Overlay')
 $package = Join-Path $repo ('WukongGuard\dist\' + $name)
 $zip = $package + '.zip'
@@ -57,7 +57,7 @@ Copy-Item -LiteralPath (Join-Path $repo 'WukongGuard\data\hidden-areas.json') `
 New-Item -ItemType Directory -Path (Join-Path $package 'Overlay'), (Join-Path $package 'release') -Force | Out-Null
 foreach ($name in @('WukongGuard.Overlay.exe', 'WukongGuard.Overlay.dll',
         'WukongGuard.Overlay.deps.json', 'WukongGuard.Overlay.runtimeconfig.json')) {
-    Copy-Item -LiteralPath (Join-Path $publish $name) -Destination (Join-Path $package 'Overlay\' $name)
+    Copy-Item -LiteralPath (Join-Path $publish $name) -Destination (Join-Path (Join-Path $package 'Overlay') $name)
 }
 $sdkRoot = Split-Path $dotnet
 $desktopVersions = @(Get-ChildItem -LiteralPath (Join-Path $sdkRoot 'shared\Microsoft.WindowsDesktop.App') `
@@ -78,7 +78,7 @@ foreach ($framework in @('Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App'
 }
 foreach ($name in @('find-game.ps1', 'install.ps1', 'uninstall.ps1',
         'export-diagnostics.ps1', 'README.md')) {
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $package 'release\' $name)
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path (Join-Path $package 'release') $name)
 }
 $hashes = Get-ChildItem -LiteralPath $package -File -Recurse | ForEach-Object {
     $relative = $_.FullName.Substring($package.Length + 1)

@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 if (-not $PackageZip) {
     $latest = Get-ChildItem -LiteralPath (Join-Path $repo 'WukongGuard\dist') `
-        -Filter 'WukongGuard-0.4.0-rc8-*.zip' -File |
+        -Filter 'WukongGuard-0.4.0-rc9-*.zip' -File |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if (-not $latest) { throw 'Build WukongGuard/release/build-package.ps1 first.' }
     $PackageZip = $latest.FullName
@@ -30,7 +30,7 @@ New-Item -ItemType Directory -Path $stage, $dist -Force | Out-Null
     "-p:PayloadZip=$PackageZip" --ignore-failed-sources -o $stage --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed.' }
 
-$exe = Join-Path $dist 'WukongGuard-0.4.0-rc8-Setup.exe'
+$exe = Join-Path $dist 'WukongGuard-0.4.0-rc9-Setup.exe'
 Copy-Item -LiteralPath (Join-Path $stage 'WukongGuard.Installer.exe') -Destination $exe -Force
 Write-Output "Installer: $exe"
 Write-Output "SHA256: $((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash)"
