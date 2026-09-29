@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using System.IO;
 using CSharpModBase;
 using CSharpModBase.Input;
 using WukongGuard.Core;
@@ -11,10 +13,15 @@ namespace WukongGuard
         private static int previewIndex;
 
         public string Name => "WukongGuard";
-        public string Version => "0.4.0-rc9";
+        public string Version => "0.4.0-rc10";
 
         public void Init()
         {
+            if (!IsLauncherRunning())
+            {
+                TraceLog.Write("[WukongGuard] launcher session absent; mod inactive");
+                return;
+            }
             TraceLog.Write("[WukongGuard] loaded");
             bool developmentMode = RuleLoader.LoadDevelopmentMode();
             previewRules = developmentMode ? RuleLoader.LoadPreviewRules() : new List<MissableRule>();
@@ -29,6 +36,19 @@ namespace WukongGuard
             }
             OverlayLauncher.EnsureRunning();
             GuardMonitor.Start(previewRules, developmentMode);
+        }
+
+        private static bool IsLauncherRunning()
+        {
+            try
+            {
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "WukongGuard", "active-session.txt");
+                TimeSpan age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
+                return File.ReadAllText(path).Trim() == "armed"
+                    && age >= TimeSpan.Zero && age < TimeSpan.FromSeconds(30);
+            }
+            catch { return false; }
         }
 
         public void DeInit()

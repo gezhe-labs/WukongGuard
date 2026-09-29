@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $localDotnet) {
 $env:NuGetAudit = 'false'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$name = 'WukongGuard-0.4.0-rc9-' + $stamp
+$name = 'WukongGuard-0.4.0-rc10-' + $stamp
 $publish = Join-Path $repo ('WukongGuard\dist-stage\' + $name + '\Overlay')
 $package = Join-Path $repo ('WukongGuard\dist\' + $name)
 $zip = $package + '.zip'
@@ -76,7 +76,7 @@ foreach ($framework in @('Microsoft.NETCore.App', 'Microsoft.WindowsDesktop.App'
     Copy-DirectoryContents (Join-Path $sdkRoot ('shared\' + $framework + '\' + $runtimeVersion)) `
         (Join-Path $runtimeTarget ('shared\' + $framework + '\' + $runtimeVersion))
 }
-foreach ($name in @('find-game.ps1', 'install.ps1', 'uninstall.ps1',
+foreach ($name in @('find-game.ps1', 'install.ps1', 'start-session.ps1', 'uninstall.ps1',
         'export-diagnostics.ps1', 'README.md')) {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path (Join-Path $package 'release') $name)
 }

@@ -206,14 +206,18 @@ internal static class Installation
             Log("Previous installation backed up: " + backup);
         }
         Directory.CreateDirectory(modDir);
-        File.Copy(Path.Combine(packageRoot, "WukongGuard.dll"), Path.Combine(modDir, "WukongGuard.dll"), true);
+        File.Copy(Path.Combine(packageRoot, "WukongGuard.dll"),
+            Path.Combine(modDir, "WukongGuard.mod-disabled"), true);
+        File.Delete(Path.Combine(modDir, "WukongGuard.dll"));
+        File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WukongGuard", "active-session.txt"));
         File.Copy(Path.Combine(packageRoot, "rules.json"), Path.Combine(modDir, "rules.json"), true);
         var experience = Path.Combine(modDir, "experience.json");
         if (!File.Exists(experience)) File.Copy(Path.Combine(packageRoot, "experience.json"), experience);
-        var owned = new List<string> { "WukongGuard.dll" };
+        var owned = new List<string> { "WukongGuard.dll", "WukongGuard.mod-disabled" };
         CopyDirectory(Path.Combine(packageRoot, "Overlay"), Path.Combine(modDir, "Overlay"), owned, "Overlay");
         CopyDirectory(Path.Combine(packageRoot, "data"), Path.Combine(modDir, "data"), owned, "data");
-        foreach (var name in new[] { "find-game.ps1", "uninstall.ps1", "export-diagnostics.ps1", "README.md" })
+        foreach (var name in new[] { "find-game.ps1", "start-session.ps1", "uninstall.ps1", "export-diagnostics.ps1", "README.md" })
         {
             var source = Path.Combine(packageRoot, "release", name);
             var destination = Path.Combine(modDir, "release", name);

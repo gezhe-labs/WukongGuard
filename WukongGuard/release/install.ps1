@@ -41,7 +41,8 @@ if (Test-Path -LiteralPath $modDir) {
     Write-Output "Previous installation backed up: $backup"
 }
 New-Item -ItemType Directory -Path $modDir -Force | Out-Null
-Copy-Item -LiteralPath $modDll -Destination (Join-Path $modDir 'WukongGuard.dll') -Force
+Copy-Item -LiteralPath $modDll -Destination (Join-Path $modDir 'WukongGuard.mod-disabled') -Force
+Remove-Item -LiteralPath (Join-Path $modDir 'WukongGuard.dll') -Force -ErrorAction SilentlyContinue
 # A release must activate its shipped rules even when upgrading a development install.
 # The directory backup above retains the previous rules for recovery.
 Copy-Item -LiteralPath (Join-Path $packageRoot 'rules.json') `
@@ -54,6 +55,7 @@ $targetOverlay = Join-Path $modDir 'Overlay'
 New-Item -ItemType Directory -Path $targetOverlay -Force | Out-Null
 $ownedFiles = [System.Collections.Generic.List[string]]::new()
 $ownedFiles.Add('WukongGuard.dll')
+$ownedFiles.Add('WukongGuard.mod-disabled')
 foreach ($file in (Get-ChildItem -LiteralPath $overlayDir -File -Recurse)) {
     $relative = $file.FullName.Substring($overlayDir.Length + 1)
     $destination = Join-Path $targetOverlay $relative
@@ -63,4 +65,4 @@ foreach ($file in (Get-ChildItem -LiteralPath $overlayDir -File -Recurse)) {
 }
 $ownedFiles | Set-Content -LiteralPath (Join-Path $modDir '.release-files.txt') -Encoding UTF8
 Write-Output "Installed WukongGuard: $modDir"
-Write-Output 'Start the game through Steam. The Mod will launch the overlay automatically.'
+Write-Output 'Plugin is disabled by default. Run release\start-session.ps1, then start the game through Steam.'

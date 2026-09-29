@@ -1,4 +1,4 @@
-# WukongGuard 0.4.0-rc9
+# WukongGuard 0.4.0-rc10
 
 本版按用户提供的《错过就无法完成的任务》和《防剧透的全隐藏地区指南》重新划分提醒：
 
@@ -51,7 +51,7 @@
 .\WukongGuard\tools\start-overlay.ps1
 ```
 
-发布 ZIP 解压后执行 `.\release\install.ps1`。需要 B1CSharpLoader v0.0.8，ZIP 自带 .NET 8 Desktop Runtime。通过 Steam 进入游戏，无需手动报告土地庙或按快照键。托盘“状态”应显示失效提醒 7 条；默认隐藏地区关闭。日志在 `%LOCALAPPDATA%\WukongGuard\guard.log`，命中后应依次出现 `matched <rule-id>` 和 `delivered <rule-id>`。初始提醒 10 秒后自动收起；托盘“最近提醒”可重看，“测试提示交互”可在当前位置安全体验按键，不表示附近有遗漏。
+发布 ZIP 解压后执行 `.\release\install.ps1`，再运行 `.\release\start-session.ps1` 并保持窗口打开，之后通过 Steam 进入游戏。游戏退出后脚本自动停用插件。需要 B1CSharpLoader v0.0.8，ZIP 自带 .NET 8 Desktop Runtime。无需手动报告土地庙或按快照键。托盘“状态”应显示失效提醒 7 条；默认隐藏地区关闭。日志在 `%LOCALAPPDATA%\WukongGuard\guard.log`，命中后应依次出现 `matched <rule-id>` 和 `delivered <rule-id>`。初始提醒 10 秒后自动收起；托盘“最近提醒”可重看，“测试提示交互”可在当前位置安全体验按键，不表示附近有遗漏。
 
 游戏未到对应地点时保持静默。第一章幽魂风险提示已做一次实机正向验收；其余规则以及新的隐藏地区移动门槛仍待逐点验证。看到编译通过或 `active rules=13` 只表示规则已加载。
 
