@@ -162,7 +162,7 @@ internal static class Program
             "hidden hint appears after three seconds of movement");
         Check(delayedEngine.Evaluate(delayedState, true).Count == 0,
             "hidden hint does not repeat while standing in range");
-        delayedState.X = 2100;
+        delayedState.X = 6000;
         delayedState.ObservedAtUtc = delayedState.ObservedAtUtc.AddSeconds(1);
         Check(delayedEngine.Evaluate(delayedState, true).Count == 0,
             "leaving shrine area rearms hidden hint");
@@ -178,6 +178,25 @@ internal static class Program
         delayedState.ObservedAtUtc = delayedState.ObservedAtUtc.AddSeconds(1);
         Check(delayedEngine.Evaluate(delayedState, true).Count == 0,
             "re-enabling hidden hints still waits for walking");
+        var outboundEngine = new RuleEngine(new[] { delayedHint });
+        var outbound = new WukongGameState
+        {
+            RawChapter = 10, MapId = 10, X = 1400, Y = 0, Z = 0,
+            ObservedAtUtc = new DateTime(2026, 9, 28, 1, 0, 0, DateTimeKind.Utc)
+        };
+        Check(outboundEngine.Evaluate(outbound, true).Count == 0,
+            "shrine boundary entry starts movement window");
+        for (var second = 1; second <= 2; second++)
+        {
+            outbound.X += 1000;
+            outbound.ObservedAtUtc = outbound.ObservedAtUtc.AddSeconds(1);
+            Check(outboundEngine.Evaluate(outbound, true).Count == 0,
+                "walking away from shrine keeps countdown without early trigger");
+        }
+        outbound.X += 1000;
+        outbound.ObservedAtUtc = outbound.ObservedAtUtc.AddSeconds(1);
+        Check(outboundEngine.Evaluate(outbound, true).Count == 1,
+            "walking beyond shrine radius still triggers after three seconds");
         delayedHint.Category = "missable";
         Check(!RuleEngine.IsValid(delayedHint), "irreversible warning cannot be movement delayed");
         locationCheck.Category = "missable";

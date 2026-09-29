@@ -33,12 +33,20 @@ namespace WukongGuard
         private static bool needsWorldInteractionState;
         private static bool needsPsmState;
         private static volatile bool hiddenAreaHints;
+        private static IReadOnlyList<MissableRule> hiddenRules;
+        private static bool hiddenHintStateLogged;
+        private static DateTime nextHiddenDiagnosticUtc;
+        private static int hiddenDiagnosticCount;
 
         internal static void Start(IReadOnlyList<MissableRule> previewRules, bool developerDiagnostics)
         {
             developmentMode = developerDiagnostics;
             errorLogged = false;
             var activeRules = RuleLoader.Load();
+            hiddenRules = activeRules.Where(rule => rule.Category == "hidden_area").ToList();
+            hiddenHintStateLogged = false;
+            nextHiddenDiagnosticUtc = DateTime.MinValue;
+            hiddenDiagnosticCount = 0;
             activeRuleCount = activeRules.Count(rule => rule.Category == "missable");
             hiddenAreaHints = GuardSettings.HiddenAreaHints();
             engine = new RuleEngine(activeRules);
@@ -90,6 +98,7 @@ namespace WukongGuard
             needsWorldInteractionState = false;
             needsPsmState = false;
             hiddenAreaHints = false;
+            hiddenRules = null;
             Interlocked.Exchange(ref queued, 0);
         }
 
@@ -165,6 +174,7 @@ namespace WukongGuard
                     PublishStatus("等待角色数据；正式规则" + activeRuleCount + "条");
                     return;
                 }
+                LogHiddenHintDiagnostic(state);
                 bool missingRequiredSource = needsQuestState && !state.QuestStateAvailable
                     || needsItemState && !state.ItemStateAvailable
                     || needsEquipState && !state.EquipStateAvailable
@@ -214,6 +224,38 @@ namespace WukongGuard
                 }
             }
             catch (Exception ex) { LogError(ex); }
+        }
+
+        private static void LogHiddenHintDiagnostic(WukongGameState state)
+        {
+            if (!hiddenAreaHints)
+            {
+                hiddenHintStateLogged = false;
+                return;
+            }
+            if (!hiddenHintStateLogged)
+            {
+                hiddenHintStateLogged = true;
+                TraceLog.Write("[WukongGuard] hidden hint enabled progress=" + state.ProgressKey
+                    + " xyz=" + $"{state.X:F0},{state.Y:F0},{state.Z:F0}");
+            }
+            if (hiddenDiagnosticCount >= 20 || DateTime.UtcNow < nextHiddenDiagnosticUtc
+                || !state.X.HasValue || !state.Y.HasValue || !state.Z.HasValue) return;
+            var nearest = hiddenRules?.Where(rule => rule.RawChapter == state.RawChapter
+                    && rule.MapId == state.MapId && rule.X.HasValue && rule.Y.HasValue && rule.Z.HasValue)
+                .Select(rule => new
+                {
+                    Rule = rule,
+                    Distance = Math.Sqrt(Math.Pow(state.X.Value - rule.X.Value, 2)
+                        + Math.Pow(state.Y.Value - rule.Y.Value, 2)
+                        + Math.Pow(state.Z.Value - rule.Z.Value, 2))
+                }).OrderBy(entry => entry.Distance).FirstOrDefault();
+            if (nearest == null || nearest.Distance > nearest.Rule.Radius.Value + 7000) return;
+            nextHiddenDiagnosticUtc = DateTime.UtcNow.AddSeconds(3);
+            hiddenDiagnosticCount++;
+            TraceLog.Write("[WukongGuard] hidden hint nearby " + nearest.Rule.Id
+                + " progress=" + state.ProgressKey + " distance=" + nearest.Distance.ToString("F0")
+                + " xyz=" + $"{state.X:F0},{state.Y:F0},{state.Z:F0}");
         }
 
         private static void LogQuestChanges(WukongGameState state)

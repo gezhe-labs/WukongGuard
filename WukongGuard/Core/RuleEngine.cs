@@ -16,7 +16,6 @@ namespace WukongGuard.Core
         private sealed class MovementWindow
         {
             public DateTime LastObservedAtUtc;
-            public double StartX, StartY, StartZ;
             public double LastX, LastY, LastZ;
             public double MovingSeconds;
         }
@@ -49,7 +48,11 @@ namespace WukongGuard.Core
                     if (fired.Contains(cycleKey)
                         || retryAfterUtc.TryGetValue(cycleKey, out var retryAt) && DateTime.UtcNow < retryAt)
                         continue;
-                    if (!Matches(rule, state))
+                    bool locationMatches = Matches(rule, state);
+                    if (!locationMatches && rule.MovementSecondsBeforeTrigger > 0
+                        && movementWindows.ContainsKey(cycleKey))
+                        locationMatches = Matches(rule, state, MovementFollowRadius(rule));
+                    if (!locationMatches)
                     {
                         movementWindows.Remove(cycleKey);
                         continue;
@@ -87,7 +90,6 @@ namespace WukongGuard.Core
                 movementWindows[key] = new MovementWindow
                 {
                     LastObservedAtUtc = now,
-                    StartX = state.X.Value, StartY = state.Y.Value, StartZ = state.Z.Value,
                     LastX = state.X.Value, LastY = state.Y.Value, LastZ = state.Z.Value
                 };
                 return false;
@@ -100,9 +102,6 @@ namespace WukongGuard.Core
             {
                 // A loading screen or a stalled sample cannot count as walking time.
                 window.MovingSeconds = 0;
-                window.StartX = state.X.Value;
-                window.StartY = state.Y.Value;
-                window.StartZ = state.Z.Value;
             }
             else if (seconds > 0 && dx * dx + dy * dy + dz * dz >= 30 * 30)
                 window.MovingSeconds += seconds;
@@ -110,12 +109,11 @@ namespace WukongGuard.Core
             window.LastX = state.X.Value;
             window.LastY = state.Y.Value;
             window.LastZ = state.Z.Value;
-            dx = state.X.Value - window.StartX;
-            dy = state.Y.Value - window.StartY;
-            dz = state.Z.Value - window.StartZ;
-            return window.MovingSeconds >= rule.MovementSecondsBeforeTrigger
-                && dx * dx + dy * dy + dz * dz >= 150 * 150;
+            return window.MovingSeconds >= rule.MovementSecondsBeforeTrigger;
         }
+
+        private static double MovementFollowRadius(MissableRule rule)
+            => rule.Radius.Value + 3500;
 
         private static bool IsOutsideRearmZone(MissableRule rule, WukongGameState state)
         {
@@ -134,7 +132,9 @@ namespace WukongGuard.Core
             double dx = state.X.Value - rule.X.Value;
             double dy = state.Y.Value - rule.Y.Value;
             double dz = state.Z.Value - rule.Z.Value;
-            double exitRadius = rule.Radius.Value + Math.Max(300, rule.Radius.Value * 0.1);
+            double activeRadius = rule.MovementSecondsBeforeTrigger > 0
+                ? MovementFollowRadius(rule) : rule.Radius.Value;
+            double exitRadius = activeRadius + Math.Max(300, activeRadius * 0.1);
             return dx * dx + dy * dy + dz * dz > exitRadius * exitRadius;
         }
 
@@ -157,7 +157,7 @@ namespace WukongGuard.Core
                 && rule.Spoilers.All(s => !string.IsNullOrWhiteSpace(s));
         }
 
-        private static bool Matches(MissableRule rule, WukongGameState state)
+        private static bool Matches(MissableRule rule, WukongGameState state, double? radiusOverride = null)
         {
             if (state.RawChapter != rule.RawChapter || state.MapId != rule.MapId
                 || rule.AreaId.HasValue && state.AreaId != rule.AreaId)
@@ -171,7 +171,8 @@ namespace WukongGuard.Core
             double dx = state.X.Value - rule.X.Value;
             double dy = state.Y.Value - rule.Y.Value;
             double dz = state.Z.Value - rule.Z.Value;
-            return dx * dx + dy * dy + dz * dz <= rule.Radius.Value * rule.Radius.Value;
+            double radius = radiusOverride ?? rule.Radius.Value;
+            return dx * dx + dy * dy + dz * dz <= radius * radius;
         }
 
         private static bool IsValidCondition(SignalCondition condition)
