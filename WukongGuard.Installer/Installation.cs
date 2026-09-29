@@ -4,18 +4,26 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Security.Principal;
 using Microsoft.Win32;
 
 namespace WukongGuard.Installer;
 
 internal static class Installation
 {
+    internal const string ProductVersion = "0.5.0-rc1";
     private const string LoaderUrl =
         "https://github.com/czastack/B1CSharpLoader/releases/download/v0.0.8/B1CSharpLoader-0.0.8.zip";
     private const string LoaderSha256 =
         "721E8C34174060AD988B91100A63D013AF361109E2A173A754C7FEDA1847D4F0";
     private const string PayloadResource = "WukongGuardPayload.zip";
     private const long MaxLoaderBytes = 30L * 1024 * 1024;
+    private static readonly Lazy<string> EmbeddedPayloadHash = new(() =>
+    {
+        using var resource = typeof(Installation).Assembly.GetManifestResourceStream(PayloadResource)
+            ?? throw new InvalidOperationException("程序缺少内置游戏组件。");
+        return Convert.ToHexString(SHA256.HashData(resource));
+    });
 
     internal static string? TryFindGameRoot()
     {
@@ -56,8 +64,37 @@ internal static class Installation
         catch (NotSupportedException) { }
     }
 
-    private static bool IsGameRoot(string path) => File.Exists(Path.Combine(path,
+    internal static bool IsGameRoot(string path) => File.Exists(Path.Combine(path,
         "b1", "Binaries", "Win64", "b1-Win64-Shipping.exe"));
+
+    internal static bool NeedsPreparation(string gameRoot)
+    {
+        if (!IsGameRoot(gameRoot)) return true;
+        var modDir = SessionControl.ModDirectory(gameRoot);
+        var marker = Path.Combine(modDir, ".product-version.txt");
+        if (!File.Exists(marker) || File.ReadAllText(marker).Trim() != ProductVersion) return true;
+        var packageHash = Path.Combine(modDir, ".package-sha256.txt");
+        if (!File.Exists(packageHash)
+            || !File.ReadAllText(packageHash).Trim().Equals(EmbeddedPayloadHash.Value,
+                StringComparison.OrdinalIgnoreCase)) return true;
+        if (!SessionControl.IsInstalled(gameRoot)
+            || !File.Exists(Path.Combine(modDir, "rules.json"))
+            || !File.Exists(Path.Combine(modDir, "Overlay", "WukongGuard.Overlay.exe"))
+            || !File.Exists(Path.Combine(gameRoot, "b1", "Binaries", "Win64", "version.dll")))
+            return true;
+        var ini = Path.Combine(gameRoot, "b1", "Binaries", "Win64", "CSharpLoader", "b1cs.ini");
+        return !File.Exists(ini) || !HasSetting(ini, "Console", "0")
+            || !HasSetting(ini, "EnableJit", "0");
+    }
+
+    private static bool HasSetting(string path, string name, string expected)
+    {
+        var pattern = new Regex(@"^[ \t]*" + Regex.Escape(name) + @"[ \t]*=[ \t]*(.*?)[ \t]*$",
+            RegexOptions.IgnoreCase);
+        var values = File.ReadLines(path).Select(line => pattern.Match(line))
+            .Where(match => match.Success).Select(match => match.Groups[1].Value).ToArray();
+        return values.Length == 1 && values[0] == expected;
+    }
 
     internal static void VerifyPayload()
     {
@@ -66,10 +103,11 @@ internal static class Installation
         finally { DeleteTemporaryDirectory(temp); }
     }
 
-    internal static Task InstallAsync(string gameRoot, Action<string> progress) =>
-        Task.Run(async () => await InstallCoreAsync(gameRoot, progress));
+    internal static Task InstallAsync(string gameRoot, Action<string> progress, string? sessionUserSid = null) =>
+        Task.Run(async () => await InstallCoreAsync(gameRoot, progress, sessionUserSid));
 
-    private static async Task InstallCoreAsync(string gameRoot, Action<string> progress)
+    private static async Task InstallCoreAsync(string gameRoot, Action<string> progress,
+        string? sessionUserSid)
     {
         if (string.IsNullOrWhiteSpace(gameRoot))
             throw new InvalidOperationException("请先选择游戏安装目录。");
@@ -79,7 +117,7 @@ internal static class Installation
         if (Process.GetProcessesByName("b1-Win64-Shipping").Length != 0)
             throw new InvalidOperationException("请先完全退出《黑神话：悟空》，然后重新安装。");
         if (Process.GetProcessesByName("WukongGuard.Overlay").Length != 0)
-            throw new InvalidOperationException("请先从系统托盘退出 WukongGuard 覆盖层，然后重新安装。");
+            throw new InvalidOperationException("请先退出正在运行的提醒窗口，然后重新准备。");
 
         var temp = CreateTemporaryDirectory();
         try
@@ -88,10 +126,12 @@ internal static class Installation
             var packageRoot = ExtractAndVerifyPayload(temp);
             var gameBin = Path.Combine(gameRoot, "b1", "Binaries", "Win64");
             await EnsureLoaderAsync(gameBin, temp, progress);
-            progress("备份旧版并安装 WukongGuard…");
+            ConfigureLoader(gameBin);
+            progress("备份旧版并准备后悔药…");
             InstallGuard(packageRoot, gameBin);
+            GrantSessionAccess(SessionControl.ModDirectory(gameRoot), sessionUserSid);
             Log("Install succeeded. Game root: " + gameRoot);
-            progress("安装完成。");
+            progress("准备完成。");
         }
         finally { DeleteTemporaryDirectory(temp); }
     }
@@ -100,7 +140,7 @@ internal static class Installation
     {
         var zip = Path.Combine(temp, "payload.zip");
         using (var resource = typeof(Installation).Assembly.GetManifestResourceStream(PayloadResource)
-            ?? throw new InvalidOperationException("安装程序缺少内置 WukongGuard 文件。"))
+            ?? throw new InvalidOperationException("程序缺少内置游戏组件。"))
         using (var output = File.Create(zip)) resource.CopyTo(output);
 
         var extraction = Path.Combine(temp, "payload");
@@ -145,7 +185,7 @@ internal static class Installation
         var loader = Path.Combine(gameBin, "CSharpLoader", "CSharpModBase.dll");
         if (File.Exists(loader))
         {
-            progress("检测到已安装的 B1CSharpLoader，保留原配置。 ");
+            progress("检测到已安装的 B1CSharpLoader。");
             return;
         }
         if (File.Exists(Path.Combine(gameBin, "version.dll"))
@@ -156,7 +196,7 @@ internal static class Installation
         var zip = Path.Combine(temp, "loader.zip");
         using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) })
         {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("WukongGuardInstaller/0.4.0");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("RegretPill/0.5.0");
             using var response = await client.GetAsync(LoaderUrl, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > MaxLoaderBytes)
@@ -194,6 +234,40 @@ internal static class Installation
         Log("Installed B1CSharpLoader v0.0.8 from official Release; EnableJit=0.");
     }
 
+    private static void ConfigureLoader(string gameBin)
+    {
+        var ini = Path.Combine(gameBin, "CSharpLoader", "b1cs.ini");
+        if (!File.Exists(ini))
+            throw new InvalidOperationException("B1CSharpLoader 配置文件缺失，准备已停止。");
+        var original = File.ReadAllText(ini);
+        var updated = SetSetting(SetSetting(original, "Console", "0"), "EnableJit", "0");
+        if (updated == original) return;
+        var backup = ini + ".before-regretpill-" + DateTime.Now.ToString("yyyyMMdd-HHmmss")
+            + "-" + Guid.NewGuid().ToString("N")[..6] + ".bak";
+        File.Copy(ini, backup, false);
+        File.WriteAllText(ini, updated, new UTF8Encoding(false));
+        Log("B1CSharpLoader Console=0 and EnableJit=0; previous settings backed up: " + backup);
+    }
+
+    private static string SetSetting(string original, string key, string value)
+    {
+        var lineEnding = original.Contains("\r\n") ? "\r\n" : "\n";
+        var lines = Regex.Split(original.TrimEnd('\r', '\n'), @"\r?\n");
+        var pattern = new Regex(@"^[ \t]*" + Regex.Escape(key) + @"[ \t]*=",
+            RegexOptions.IgnoreCase);
+        var updated = new List<string>(lines.Length + 1);
+        var found = false;
+        foreach (var line in lines)
+        {
+            if (!pattern.IsMatch(line)) { updated.Add(line); continue; }
+            if (found) continue;
+            updated.Add(key + "=" + value);
+            found = true;
+        }
+        if (!found) updated.Add(key + "=" + value);
+        return string.Join(lineEnding, updated) + lineEnding;
+    }
+
     private static void InstallGuard(string packageRoot, string gameBin)
     {
         var loaderDir = Path.Combine(gameBin, "CSharpLoader");
@@ -214,7 +288,11 @@ internal static class Installation
         File.Copy(Path.Combine(packageRoot, "rules.json"), Path.Combine(modDir, "rules.json"), true);
         var experience = Path.Combine(modDir, "experience.json");
         if (!File.Exists(experience)) File.Copy(Path.Combine(packageRoot, "experience.json"), experience);
-        var owned = new List<string> { "WukongGuard.dll", "WukongGuard.mod-disabled" };
+        var owned = new List<string>
+        {
+            "WukongGuard.dll", "WukongGuard.mod-disabled",
+            ".product-version.txt", ".package-sha256.txt"
+        };
         CopyDirectory(Path.Combine(packageRoot, "Overlay"), Path.Combine(modDir, "Overlay"), owned, "Overlay");
         CopyDirectory(Path.Combine(packageRoot, "data"), Path.Combine(modDir, "data"), owned, "data");
         foreach (var name in new[] { "find-game.ps1", "start-session.ps1", "uninstall.ps1", "export-diagnostics.ps1", "README.md" })
@@ -226,6 +304,47 @@ internal static class Installation
             owned.Add(Path.Combine("release", name));
         }
         File.WriteAllLines(Path.Combine(modDir, ".release-files.txt"), owned, new UTF8Encoding(false));
+        File.WriteAllText(Path.Combine(modDir, ".product-version.txt"), ProductVersion,
+            new UTF8Encoding(false));
+        File.WriteAllText(Path.Combine(modDir, ".package-sha256.txt"), EmbeddedPayloadHash.Value,
+            new UTF8Encoding(false));
+    }
+
+    private static void GrantSessionAccess(string modDir, string? requestedSid)
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var currentSid = identity.User?.Value
+            ?? throw new InvalidOperationException("无法识别当前 Windows 用户。");
+        var sid = requestedSid ?? currentSid;
+        if (!sid.StartsWith("S-1-", StringComparison.Ordinal)
+            || !sid.Skip(4).All(character => char.IsDigit(character) || character == '-'))
+            throw new InvalidOperationException("Windows 用户标识格式无效。");
+        var start = new ProcessStartInfo("icacls.exe")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add(modDir);
+        start.ArgumentList.Add("/grant");
+        start.ArgumentList.Add("*" + sid + ":(OI)(CI)M");
+        start.ArgumentList.Add("/T");
+        start.ArgumentList.Add("/Q");
+        using var process = Process.Start(start)
+            ?? throw new InvalidOperationException("无法设置后悔药组件目录权限。");
+        string error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException("后悔药组件目录权限配置失败：" + error);
+        Log("Granted session access on own Mod directory to " + sid);
+    }
+
+    internal static void RepairSessionAccess(string gameRoot, string userSid)
+    {
+        gameRoot = Path.GetFullPath(gameRoot);
+        if (!IsGameRoot(gameRoot) || !SessionControl.IsInstalled(gameRoot))
+            throw new InvalidOperationException("游戏组件尚未准备完成。");
+        GrantSessionAccess(SessionControl.ModDirectory(gameRoot), userSid);
     }
 
     private static void CopyDirectory(string source, string destination,

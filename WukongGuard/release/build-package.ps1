@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $localDotnet) {
 $env:NuGetAudit = 'false'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$name = 'WukongGuard-0.4.0-rc11-' + $stamp
+$name = 'WukongGuard-0.5.0-rc1-' + $stamp
 $publish = Join-Path $repo ('WukongGuard\dist-stage\' + $name + '\Overlay')
 $package = Join-Path $repo ('WukongGuard\dist\' + $name)
 $zip = $package + '.zip'

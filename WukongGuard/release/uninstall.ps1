@@ -39,9 +39,11 @@ if ($PurgeSettings) {
         $file = Join-Path $resolvedMod $name
         if (Test-Path -LiteralPath $file -PathType Leaf) { Remove-Item -LiteralPath $file }
     }
-    $localSettings = Join-Path $env:LOCALAPPDATA 'WukongGuard\settings.json'
-    if (Test-Path -LiteralPath $localSettings -PathType Leaf) {
-        Remove-Item -LiteralPath $localSettings
+    foreach ($name in @('settings.json', 'history.jsonl', 'runtime-status.txt')) {
+        $localFile = Join-Path $env:LOCALAPPDATA ('WukongGuard\' + $name)
+        if (Test-Path -LiteralPath $localFile -PathType Leaf) {
+            Remove-Item -LiteralPath $localFile
+        }
     }
 }
 foreach ($directory in ($ownedDirectories | Sort-Object -Property Length -Descending)) {

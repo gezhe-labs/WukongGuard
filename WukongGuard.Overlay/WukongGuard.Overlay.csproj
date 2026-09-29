@@ -6,5 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>WukongGuard.Overlay</AssemblyName>
+    <ApplicationIcon>..\assets\regretpill.ico</ApplicationIcon>
+    <Product>后悔药</Product>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\HistoryStore.cs" Link="Shared\HistoryStore.cs" />
+  </ItemGroup>
 </Project>

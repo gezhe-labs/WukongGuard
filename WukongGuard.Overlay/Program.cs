@@ -37,6 +37,10 @@ internal static class Program
                     if (status.Length > 100) continue;
                     form.Invoke(new Action(() => form.SetStatus(status)));
                 }
+                else if (line == "CLEAR_HISTORY")
+                {
+                    form.Invoke(new Action(form.ClearHistory));
+                }
                 else if (parts.Length == 6 && parts[0] == "SHOW")
                 {
                     string[] levels = new string[4];

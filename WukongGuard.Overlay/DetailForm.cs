@@ -26,7 +26,7 @@ internal sealed class DetailForm : Form
         levels = (string[])spoilerLevels.Clone();
         returnWindow = gameWindow;
         this.restoreGameFocus = restoreGameFocus;
-        Text = "WukongGuard · 更多提示";
+        Text = "后悔药 · 更多提示";
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = false;

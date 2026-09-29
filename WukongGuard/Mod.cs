@@ -13,7 +13,7 @@ namespace WukongGuard
         private static int previewIndex;
 
         public string Name => "WukongGuard";
-        public string Version => "0.4.0-rc11";
+        public string Version => "0.5.0-rc1";
 
         public void Init()
         {
@@ -38,7 +38,7 @@ namespace WukongGuard
             GuardMonitor.Start(previewRules, developmentMode);
         }
 
-        private static bool IsLauncherRunning()
+        internal static bool IsLauncherRunning()
         {
             try
             {
@@ -81,7 +81,7 @@ namespace WukongGuard
             {
                 Id = "overlay_demo",
                 Spoilers = new[] {
-                    "这是 WukongGuard 显示测试，不代表附近有遗漏点。",
+                    "这是后悔药显示测试，不代表附近有遗漏点。",
                     "显示测试：游戏状态来自运行时只读接口。",
                     "显示测试：规则需经实际剧情节点校准后启用。",
                     "显示测试：按关闭可返回游戏。"

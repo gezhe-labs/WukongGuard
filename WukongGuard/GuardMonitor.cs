@@ -149,6 +149,12 @@ namespace WukongGuard
             if (!active || Interlocked.Exchange(ref queued, 1) != 0) return;
             try
             {
+                if (!Mod.IsLauncherRunning())
+                {
+                    TraceLog.Write("[WukongGuard] launcher lease expired; monitor stopped");
+                    Stop();
+                    return;
+                }
                 hiddenAreaHints = GuardSettings.HiddenAreaHints();
                 Utils.TryRunOnGameThread(() =>
                 {

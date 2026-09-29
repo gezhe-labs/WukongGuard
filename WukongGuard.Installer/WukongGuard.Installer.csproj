@@ -6,10 +6,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.4.0.0</Version>
+    <Version>0.5.0.0</Version>
+    <ApplicationIcon>..\assets\regretpill.ico</ApplicationIcon>
+    <Product>后悔药</Product>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(PayloadZip)" LogicalName="WukongGuardPayload.zip" Condition="'$(PayloadZip)' != ''" />
+    <Compile Include="..\Shared\HistoryStore.cs" Link="Shared\HistoryStore.cs" />
   </ItemGroup>
   <Target Name="RequirePayload" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(PayloadZip)' == '' or !Exists('$(PayloadZip)')" Text="Pass -p:PayloadZip=PATH_TO_RELEASE_ZIP." />

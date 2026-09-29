@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using RegretPill.Shared;
 
 namespace WukongGuard.Overlay;
 
@@ -25,13 +26,7 @@ internal sealed class AlertForm : Form
     private readonly ToolStripMenuItem statusItem = new("状态：等待游戏消息") { Enabled = false };
     private readonly ToolStripMenuItem historyMenu = new("最近提醒");
     private readonly ToolStripMenuItem settingsMenu = new("设置");
-    private readonly ToolStripMenuItem hiddenAreaItem = new("隐藏地区提示（默认关闭）")
-    {
-        CheckOnClick = true
-    };
-    private readonly ToolStripMenuItem hotkeyPrimaryItem = new("Ctrl+Shift+G") { CheckOnClick = true };
-    private readonly ToolStripMenuItem hotkeyFallbackItem = new("Ctrl+Alt+Shift+G") { CheckOnClick = true };
-    private readonly ToolStripMenuItem gamepadMenuItem = new("手柄长按 Menu 查看详情") { CheckOnClick = true };
+    private bool gamepadEnabled;
     private readonly System.Windows.Forms.Timer countdownTimer = new() { Interval = 100 };
     private readonly System.Windows.Forms.Timer gamepadTimer = new() { Interval = 50 };
     private readonly System.Windows.Forms.Timer gameWatchTimer = new() { Interval = 5000 };
@@ -67,7 +62,7 @@ internal sealed class AlertForm : Form
 
     internal AlertForm(bool exitWithGame = false)
     {
-        Text = "WukongGuard";
+        Text = "后悔药";
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = false;
@@ -79,7 +74,7 @@ internal sealed class AlertForm : Form
         Font = new Font("Microsoft YaHei UI", 10f);
         Opacity = 0;
 
-        title.Text = "WUKONGGUARD  ·  防遗漏提醒";
+        title.Text = "后悔药  ·  防遗漏提醒";
         title.Font = new Font(Font.FontFamily, 10f, FontStyle.Bold);
         title.ForeColor = Color.FromArgb(225, 183, 104);
         title.SetBounds(20, 12, 500, 25);
@@ -104,44 +99,23 @@ internal sealed class AlertForm : Form
         var trayMenu = new ContextMenuStrip();
         trayMenu.Items.Add(statusItem);
         trayMenu.Items.Add(new ToolStripSeparator());
+        trayMenu.Items.Add("打开后悔药", null, (_, _) => SignalLauncher(@"Local\RegretPillOpenPanel"));
         historyMenu.Enabled = false;
         trayMenu.Items.Add(historyMenu);
-        trayMenu.Items.Add("测试提示交互", null, (_, _) => ShowAlert("overlay_demo", new[]
-        {
-            "显示测试：这不是当前位置的遗漏提醒。",
-            "一级提示：已进入可操作的详情窗口。",
-            "二级提示：键盘与手柄都可以逐级展开。",
-            "三级提示：测试完成，可以关闭详情窗口。"
-        }));
-        hiddenAreaItem.Checked = SettingsStore.LoadHiddenAreaHints();
-        hiddenAreaItem.CheckedChanged += OnHiddenAreaSettingChanged;
-        settingsMenu.DropDownItems.Add(hiddenAreaItem);
-        settingsMenu.DropDownItems.Add(new ToolStripSeparator());
-        var hotkeyMenu = new ToolStripMenuItem("查看更多快捷键");
-        var preferredHotkey = SettingsStore.LoadMoreHotkey();
-        hotkeyPrimaryItem.Checked = preferredHotkey == "CtrlShiftG";
-        hotkeyFallbackItem.Checked = preferredHotkey == "CtrlAltShiftG";
-        hotkeyPrimaryItem.Click += (_, _) => ChooseHotkey("CtrlShiftG");
-        hotkeyFallbackItem.Click += (_, _) => ChooseHotkey("CtrlAltShiftG");
-        hotkeyMenu.DropDownItems.Add(hotkeyPrimaryItem);
-        hotkeyMenu.DropDownItems.Add(hotkeyFallbackItem);
-        settingsMenu.DropDownItems.Add(hotkeyMenu);
-        gamepadMenuItem.Checked = SettingsStore.LoadGamepadMenuHold();
-        gamepadMenuItem.CheckedChanged += OnGamepadMenuSettingChanged;
-        settingsMenu.DropDownItems.Add(gamepadMenuItem);
+        gamepadEnabled = SettingsStore.LoadGamepadMenuHold();
+        settingsMenu.Click += (_, _) => SignalLauncher(@"Local\RegretPillOpenSettings");
         trayMenu.Items.Add(settingsMenu);
-        trayMenu.Items.Add("清空提醒记录", null, (_, _) =>
-        {
-            history.Clear();
-            historyMenu.DropDownItems.Clear();
-            historyMenu.Enabled = false;
-        });
         trayMenu.Items.Add(new ToolStripSeparator());
-        trayMenu.Items.Add("退出 WukongGuard", null, (_, _) => Close());
-        trayIcon.Icon = SystemIcons.Shield;
-        trayIcon.Text = "WukongGuard Overlay";
+        trayMenu.Items.Add("退出后悔药", null, (_, _) =>
+        {
+            SignalLauncher(@"Local\RegretPillQuit");
+            Close();
+        });
+        trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield;
+        trayIcon.Text = "后悔药 · 游戏防遗漏提醒";
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
+        LoadHistory();
         countdownTimer.Tick += (_, _) => UpdateCountdown();
         gamepadTimer.Tick += (_, _) => PollGamepadMenu();
         if (exitWithGame)
@@ -153,7 +127,9 @@ internal sealed class AlertForm : Form
                     var games = System.Diagnostics.Process.GetProcessesByName("b1-Win64-Shipping");
                     bool running = games.Length > 0;
                     foreach (var game in games) game.Dispose();
-                    if (!running) Close();
+                    var lease = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "WukongGuard", "active-session.txt");
+                    if (!running || !File.Exists(lease)) Close();
                 }
                 catch (Exception) { /* Retry on the next tick. */ }
             };
@@ -192,52 +168,38 @@ internal sealed class AlertForm : Form
     internal void SetStatus(string status)
     {
         statusItem.Text = "状态：" + status;
-    }
-
-    private void OnHiddenAreaSettingChanged(object? sender, EventArgs e)
-    {
         try
         {
-            SettingsStore.SaveHiddenAreaHints(hiddenAreaItem.Checked);
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WukongGuard");
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "runtime-status.txt"),
+                DateTime.UtcNow.Ticks + "|" + status);
         }
-        catch (Exception ex)
-        {
-            hiddenAreaItem.CheckedChanged -= OnHiddenAreaSettingChanged;
-            hiddenAreaItem.Checked = !hiddenAreaItem.Checked;
-            hiddenAreaItem.CheckedChanged += OnHiddenAreaSettingChanged;
-            MessageBox.Show("无法保存设置：" + ex.Message, "WukongGuard");
-        }
+        catch (Exception) { /* The in-game status remains available in the tray. */ }
     }
 
-    private void OnGamepadMenuSettingChanged(object? sender, EventArgs e)
+    internal void ClearHistory()
     {
-        try { SettingsStore.SaveGamepadMenuHold(gamepadMenuItem.Checked); }
-        catch (Exception ex)
-        {
-            gamepadMenuItem.CheckedChanged -= OnGamepadMenuSettingChanged;
-            gamepadMenuItem.Checked = !gamepadMenuItem.Checked;
-            gamepadMenuItem.CheckedChanged += OnGamepadMenuSettingChanged;
-            MessageBox.Show("无法保存设置：" + ex.Message, "WukongGuard");
-        }
-        if (!gamepadMenuItem.Checked) gamepadTimer.Stop();
-        else if (IsToastVisible) gamepadTimer.Start();
-        UpdateInputHint();
+        history.Clear();
+        RebuildHistoryMenu();
     }
 
     private void ShowAlertCore(string id, string[] spoilerLevels, bool remember)
     {
         if (spoilerLevels.Length != 4) return;
         if (remember) RememberAlert(id, spoilerLevels);
+        gamepadEnabled = SettingsStore.LoadGamepadMenuHold();
         StopInputListening();
         countdownTimer.Stop();
         levels = (string[])spoilerLevels.Clone();
         bool preview = id.StartsWith("preview_", StringComparison.Ordinal);
         bool autoExperience = id.StartsWith("auto_experience_", StringComparison.Ordinal);
         bool hiddenArea = id.StartsWith("hidden_", StringComparison.Ordinal);
-        title.Text = autoExperience ? "WUKONGGUARD  ·  自动体验提醒"
-            : preview ? "WUKONGGUARD  ·  提醒预览"
-            : hiddenArea ? "WUKONGGUARD  ·  隐藏地区提示"
-            : "WUKONGGUARD  ·  不可补救提醒";
+        title.Text = autoExperience ? "后悔药  ·  自动体验提醒"
+            : preview ? "后悔药  ·  提醒预览"
+            : hiddenArea ? "后悔药  ·  隐藏地区提示"
+            : "后悔药  ·  不可补救提醒";
         message.Text = levels[0];
         var screen = Screen.FromHandle(GetGameWindowOrSelf()).Bounds;
         Location = new Point(screen.Left + (screen.Width - Width) / 2, screen.Top + 80);
@@ -252,6 +214,28 @@ internal sealed class AlertForm : Form
     {
         history.Insert(0, new AlertEntry(id, (string[])spoilerLevels.Clone()));
         if (history.Count > 20) history.RemoveAt(history.Count - 1);
+        if (!id.StartsWith("overlay_demo", StringComparison.Ordinal)
+            && !id.StartsWith("preview_", StringComparison.Ordinal))
+        {
+            try { HistoryStore.Add(id, spoilerLevels); }
+            catch (Exception) { /* History must not prevent delivery. */ }
+        }
+        RebuildHistoryMenu();
+    }
+
+    private void LoadHistory()
+    {
+        try
+        {
+            foreach (var entry in HistoryStore.Load().Take(20))
+                history.Add(new AlertEntry(entry.Id, entry.Levels, entry.SeenAt));
+            RebuildHistoryMenu();
+        }
+        catch (Exception) { }
+    }
+
+    private void RebuildHistoryMenu()
+    {
         historyMenu.DropDownItems.Clear();
         foreach (var entry in history)
         {
@@ -266,12 +250,13 @@ internal sealed class AlertForm : Form
     {
         internal readonly string Id;
         internal readonly string[] Levels;
-        internal readonly DateTime SeenAt = DateTime.Now;
+        internal readonly DateTime SeenAt;
 
-        internal AlertEntry(string id, string[] levels)
+        internal AlertEntry(string id, string[] levels, DateTime? seenAt = null)
         {
             Id = id;
             Levels = levels;
+            SeenAt = seenAt ?? DateTime.Now;
         }
     }
 
@@ -283,24 +268,6 @@ internal sealed class AlertForm : Form
             return;
         }
         base.WndProc(ref message);
-    }
-
-    private void ChooseHotkey(string hotkey)
-    {
-        try
-        {
-            SettingsStore.SaveMoreHotkey(hotkey);
-            hotkeyPrimaryItem.Checked = hotkey == "CtrlShiftG";
-            hotkeyFallbackItem.Checked = hotkey == "CtrlAltShiftG";
-            if (IsToastVisible) StartInputListening();
-        }
-        catch (Exception ex)
-        {
-            var previous = SettingsStore.LoadMoreHotkey();
-            hotkeyPrimaryItem.Checked = previous == "CtrlShiftG";
-            hotkeyFallbackItem.Checked = previous == "CtrlAltShiftG";
-            MessageBox.Show("无法保存设置：" + ex.Message, "WukongGuard");
-        }
     }
 
     private void StartInputListening()
@@ -319,7 +286,7 @@ internal sealed class AlertForm : Form
             activeHotkey = attempt == "CtrlAltShiftG" ? "Ctrl+Alt+Shift+G" : "Ctrl+Shift+G";
             break;
         }
-        if (gamepadMenuItem.Checked) gamepadTimer.Start();
+        if (gamepadEnabled) gamepadTimer.Start();
         UpdateInputHint();
     }
 
@@ -339,13 +306,13 @@ internal sealed class AlertForm : Form
         string keyboard = activeHotkey.Length > 0
             ? $"按 {activeHotkey} 查看更多"
             : "键盘快捷键被占用 · 可从托盘“最近提醒”查看";
-        string gamepad = gamepadMenuItem.Checked ? " · 手柄长按 Menu 1 秒" : "";
+        string gamepad = gamepadEnabled ? " · 手柄长按 Menu 1 秒" : "";
         detail.Text = keyboard + gamepad;
     }
 
     private void PollGamepadMenu()
     {
-        if (!IsToastVisible || !gamepadMenuItem.Checked) return;
+        if (!IsToastVisible || !gamepadEnabled) return;
         long now = Stopwatch.GetTimestamp();
         for (uint index = 0; index < 4; index++)
         {
@@ -370,7 +337,7 @@ internal sealed class AlertForm : Form
     {
         if (detailForm != null) { detailForm.Activate(); return; }
         string heading = entry.Id.StartsWith("hidden_", StringComparison.Ordinal)
-            ? "WUKONGGUARD  ·  隐藏地区提示" : "WUKONGGUARD  ·  历史提醒";
+            ? "后悔药  ·  隐藏地区提示" : "后悔药  ·  历史提醒";
         ShowDetail(heading, entry.Levels);
     }
 
@@ -455,6 +422,12 @@ internal sealed class AlertForm : Form
         var games = System.Diagnostics.Process.GetProcessesByName("b1-Win64-Shipping");
         try { return games.FirstOrDefault()?.MainWindowHandle ?? Handle; }
         finally { foreach (var game in games) game.Dispose(); }
+    }
+
+    private static void SignalLauncher(string eventName)
+    {
+        try { using var signal = EventWaitHandle.OpenExisting(eventName); signal.Set(); }
+        catch (WaitHandleCannotBeOpenedException) { }
     }
 
 }
