@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
 
 namespace WukongGuard.Overlay;
 
@@ -16,9 +15,7 @@ internal sealed class DetailForm : Form
     private readonly System.Windows.Forms.Timer gamepadTimer = new() { Interval = 60 };
     private readonly ushort[] previousButtons = new ushort[4];
     private int level;
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr window);
+    private bool foregroundOnClose;
 
     internal DetailForm(string heading, string[] spoilerLevels, Rectangle screen,
         IntPtr gameWindow, bool restoreGameFocus)
@@ -93,20 +90,25 @@ internal sealed class DetailForm : Form
             for (uint index = 0; index < 4; index++)
                 if (GamepadInput.TryGetButtons(index, out var buttons)) previousButtons[index] = buttons;
             Activate();
-            SetForegroundWindow(Handle);
+            bool activated = WindowFocus.SetForegroundWindow(Handle);
+            OverlayLog.Write($"detail shown window={Handle} foreground={WindowFocus.GetForegroundWindow()} activated={activated}");
             gamepadTimer.Start();
         };
+        FormClosing += (_, _) => foregroundOnClose = WindowFocus.IsForeground(Handle);
         FormClosed += (_, _) =>
         {
             gamepadTimer.Stop();
             gamepadTimer.Dispose();
-            if (restoreGameFocus && returnWindow != IntPtr.Zero)
-                SetForegroundWindow(returnWindow);
+            bool restored = restoreGameFocus && foregroundOnClose && WindowFocus.IsWindow(returnWindow)
+                && WindowFocus.SetForegroundWindow(returnWindow);
+            OverlayLog.Write($"detail closed foreground_on_close={foregroundOnClose} "
+                + $"restored={restored} foreground={WindowFocus.GetForegroundWindow()}");
         };
     }
 
     private void PollGamepad()
     {
+        bool foreground = WindowFocus.IsForeground(Handle);
         for (uint index = 0; index < 4; index++)
         {
             if (!GamepadInput.TryGetButtons(index, out var buttons))
@@ -116,6 +118,7 @@ internal sealed class DetailForm : Form
             }
             var pressed = (ushort)(buttons & ~previousButtons[index]);
             previousButtons[index] = buttons;
+            if (!foreground) continue;
             if ((pressed & GamepadInput.B) != 0) { Close(); return; }
             if ((pressed & GamepadInput.A) != 0) { RevealNext(); return; }
         }

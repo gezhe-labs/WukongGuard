@@ -11,6 +11,29 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--smoke-install" && args[1] == "--game-root")
+        {
+            try
+            {
+                var game = Path.Combine(args[2], "b1", "Binaries", "Win64", "b1-Win64-Shipping.exe");
+                if (!File.Exists(game) || new FileInfo(game).Length > 100 || !File.ReadAllText(game).Contains("fixture")) return 2;
+                SessionControl.SetSmokeSessionFile(args[2]);
+                Installation.InstallAsync(args[2], _ => { }).GetAwaiter().GetResult();
+                return 0;
+            }
+            catch (Exception ex) { Installation.Log(ex.ToString()); return 1; }
+        }
+        if (args.Length == 5 && args[0] == "--smoke-ui" && args[1] == "--game-root" && args[3] == "--output")
+        {
+            try { ApplicationConfiguration.Initialize(); return UiSmoke.Run(args[2], args[4]); }
+            catch (Exception ex)
+            {
+                Installation.Log(ex.ToString());
+                Directory.CreateDirectory(args[4]);
+                File.WriteAllText(Path.Combine(args[4], "ui-smoke-startup-error.txt"), ex.ToString());
+                return 1;
+            }
+        }
         if (args.Length > 0 && args[0] == "--verify")
         {
             try { Installation.VerifyPayload(); return 0; }
@@ -39,7 +62,7 @@ internal static class Program
                 while (SessionControl.IsGameRunning) Thread.Sleep(3000);
                 for (var attempt = 0; attempt < 10; attempt++)
                 {
-                    try { SessionControl.Disable(args[2]); return 0; }
+                    try { SessionControl.CleanupDisabled(args[2]); return 0; }
                     catch (IOException) { Thread.Sleep(3000); }
                 }
                 return 2;

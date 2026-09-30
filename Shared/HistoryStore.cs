@@ -4,6 +4,7 @@ namespace RegretPill.Shared;
 
 internal static class HistoryStore
 {
+    internal static string? SmokeDirectory { get; set; }
     internal sealed class Entry
     {
         public string Id { get; set; } = "";
@@ -13,9 +14,8 @@ internal static class HistoryStore
         public override string ToString() => $"{SeenAt:MM-dd HH:mm}  {Levels.FirstOrDefault() ?? Id}";
     }
 
-    private static string PathToHistory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "WukongGuard", "history.jsonl");
+    private static string PathToHistory => Path.Combine(SmokeDirectory ?? Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WukongGuard"), "history.jsonl");
 
     internal static void Add(string id, string[] levels)
     {

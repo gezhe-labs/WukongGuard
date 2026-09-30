@@ -3,10 +3,11 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.5.0.0</Version>
+    <Version>0.5.0.5</Version>
     <ApplicationIcon>..\assets\regretpill.ico</ApplicationIcon>
     <Product>后悔药</Product>
   </PropertyGroup>

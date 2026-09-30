@@ -17,9 +17,16 @@ $lines = Get-Content -LiteralPath $log -Tail 500 | Where-Object {
     $line = [regex]::Replace($line, $userProfilePattern, '%USERPROFILE%', 'IgnoreCase')
     $line
 }
+$overlayLines = foreach ($name in @('overlay.log', 'overlay.log.previous')) {
+    $overlayPath = Join-Path (Split-Path -Parent $log) $name
+    if (Test-Path -LiteralPath $overlayPath) {
+        "--- $name ---"
+        Get-Content -LiteralPath $overlayPath -Tail 100
+    }
+}
 @(
     'WukongGuard local diagnostics (review before sharing)',
     'Saved-game files are not included.',
     ''
-) + $lines | Set-Content -LiteralPath $output -Encoding UTF8
+) + $lines + @($overlayLines) | Set-Content -LiteralPath $output -Encoding UTF8
 Write-Output "Diagnostics saved: $output"

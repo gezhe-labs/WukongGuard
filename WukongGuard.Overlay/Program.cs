@@ -6,15 +6,22 @@ namespace WukongGuard.Overlay;
 internal static class Program
 {
     [STAThread]
-    private static void Main(string[] args)
+    private static int Main(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--smoke-input" && args[1] == "--output")
+        {
+            ApplicationConfiguration.Initialize();
+            return InputSmoke.Run(args[2]);
+        }
         using var singleInstance = new Mutex(true, "Local\\WukongGuardOverlay", out bool created);
-        if (!created) return;
+        if (!created) return 0;
         ApplicationConfiguration.Initialize();
-        using var form = new AlertForm(args.Contains("--exit-with-game", StringComparer.Ordinal));
+        using var form = new AlertForm(args.Contains("--exit-with-game", StringComparer.Ordinal),
+            args.Contains("--managed-session", StringComparer.Ordinal));
         var server = new Thread(() => Serve(form)) { IsBackground = true, Name = "WukongGuard pipe" };
         server.Start();
         Application.Run(form);
+        return 0;
     }
 
     private static void Serve(AlertForm form)

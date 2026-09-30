@@ -44,6 +44,11 @@ internal static class SessionControl
 
     internal static void Enable(string gameRoot)
     {
+        WithMutation(() => EnableCore(gameRoot));
+    }
+
+    private static void EnableCore(string gameRoot)
+    {
         if (IsGameRunning) throw new InvalidOperationException("请先完全退出游戏，再启用本次游戏。");
         var directory = ModDirectory(gameRoot);
         var source = Path.Combine(directory, "WukongGuard.mod-disabled");
@@ -66,11 +71,37 @@ internal static class SessionControl
 
     internal static void Disable(string gameRoot)
     {
+        WithMutation(() => DisableCore(gameRoot));
+    }
+
+    private static void DisableCore(string gameRoot)
+    {
         // The in-game DLL can remain locked until the game exits. The lease is
         // revoked immediately; a later launch removes any stale DLL first.
         File.Delete(SessionFile);
         if (!IsGameRunning)
             File.Delete(Path.Combine(ModDirectory(gameRoot), "WukongGuard.dll"));
         Installation.Log("One game session disarmed.");
+    }
+
+    internal static void CleanupDisabled(string gameRoot)
+    {
+        WithMutation(() =>
+        {
+            // A cleanup helper from the previous session must not revoke a new one.
+            if (!IsGameRunning && !File.Exists(SessionFile))
+                File.Delete(Path.Combine(ModDirectory(gameRoot), "WukongGuard.dll"));
+        });
+    }
+
+    private static void WithMutation(Action action)
+    {
+        using var mutex = new Mutex(false, @"Local\RegretPillSessionMutation");
+        bool held;
+        try { held = mutex.WaitOne(TimeSpan.FromSeconds(5)); }
+        catch (AbandonedMutexException) { held = true; }
+        if (!held) throw new IOException("游戏会话正在切换，请稍后重试。");
+        try { action(); }
+        finally { mutex.ReleaseMutex(); }
     }
 }

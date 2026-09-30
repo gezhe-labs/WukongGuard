@@ -4,13 +4,25 @@ namespace WukongGuard.Installer;
 
 internal static class UserPreferences
 {
+    internal static string? SmokeDirectory { get; set; }
     // Keep the original location and keys, so the rebrand retains existing choices.
-    private static string SettingsPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "WukongGuard", "settings.json");
+    private static string SettingsPath => Path.Combine(SmokeDirectory ?? Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WukongGuard"), "settings.json");
 
     internal static bool LoadHiddenAreaHints() => ReadBool("HiddenAreaHints", false);
     internal static bool LoadGamepadMenuHold() => ReadBool("GamepadMenuHold", true);
+    internal static bool LoadSkipCloseToTrayPrompt() => ReadBool("SkipCloseToTrayPrompt", false);
+    internal static string? LoadGameRoot()
+    {
+        try
+        {
+            var path = Read()["GameRoot"]?.GetValue<string>();
+            return path != null && Installation.IsGameRoot(path) ? path : null;
+        }
+        catch { return null; }
+    }
+
+    internal static void SaveGameRoot(string value) => Save("GameRoot", value);
     internal static string LoadMoreHotkey()
     {
         try { return Read()["MoreHotkey"]?.GetValue<string>() == "CtrlAltShiftG"
@@ -20,6 +32,7 @@ internal static class UserPreferences
 
     internal static void SaveHiddenAreaHints(bool value) => Save("HiddenAreaHints", value);
     internal static void SaveGamepadMenuHold(bool value) => Save("GamepadMenuHold", value);
+    internal static void SaveSkipCloseToTrayPrompt(bool value) => Save("SkipCloseToTrayPrompt", value);
     internal static void SaveMoreHotkey(string value)
     {
         if (value is not ("CtrlShiftG" or "CtrlAltShiftG"))
@@ -40,6 +53,9 @@ internal static class UserPreferences
     private static void Save(string name, object value)
     {
         var settings = Read();
+        settings["HiddenAreaHints"] ??= false;
+        settings["MoreHotkey"] ??= "CtrlShiftG";
+        settings["GamepadMenuHold"] ??= true;
         if (value is bool flag) settings[name] = flag;
         else settings[name] = (string)value;
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);

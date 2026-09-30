@@ -4,9 +4,10 @@ namespace WukongGuard.Overlay;
 
 internal static class SettingsStore
 {
-    private static readonly string SettingsPath = Path.Combine(
+    internal static string? SmokeDirectory { get; set; }
+    private static string SettingsPath => Path.Combine(SmokeDirectory ?? Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "WukongGuard", "settings.json");
+        "WukongGuard"), "settings.json");
 
     internal static bool LoadHiddenAreaHints() => ReadBool("HiddenAreaHints", false);
     internal static bool LoadGamepadMenuHold() => ReadBool("GamepadMenuHold", true);

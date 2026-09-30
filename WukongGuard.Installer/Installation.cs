@@ -11,7 +11,7 @@ namespace WukongGuard.Installer;
 
 internal static class Installation
 {
-    internal const string ProductVersion = "0.5.0-rc1";
+    internal const string ProductVersion = "0.5.0-rc5";
     private const string LoaderUrl =
         "https://github.com/czastack/B1CSharpLoader/releases/download/v0.0.8/B1CSharpLoader-0.0.8.zip";
     private const string LoaderSha256 =
@@ -283,8 +283,7 @@ internal static class Installation
         File.Copy(Path.Combine(packageRoot, "WukongGuard.dll"),
             Path.Combine(modDir, "WukongGuard.mod-disabled"), true);
         File.Delete(Path.Combine(modDir, "WukongGuard.dll"));
-        File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "WukongGuard", "active-session.txt"));
+        File.Delete(SessionControl.SessionFile);
         File.Copy(Path.Combine(packageRoot, "rules.json"), Path.Combine(modDir, "rules.json"), true);
         var experience = Path.Combine(modDir, "experience.json");
         if (!File.Exists(experience)) File.Copy(Path.Combine(packageRoot, "experience.json"), experience);

@@ -9,6 +9,8 @@ namespace WukongGuard.Overlay;
 internal sealed class AlertForm : Form
 {
     private const int WsExNoActivate = 0x08000000;
+    private const int WsExLayered = 0x00080000;
+    private const int WsExTransparent = 0x00000020;
     private const int AlertTimeoutMilliseconds = 10000;
     private const int MoreHotkeyId = 1;
     private const int WmHotkey = 0x0312;
@@ -17,7 +19,6 @@ internal sealed class AlertForm : Form
     private const uint ModShift = 0x0004;
     private const uint ModNoRepeat = 0x4000;
     private const uint VkG = 0x47;
-    private const int GamepadMenuHoldMilliseconds = 1000;
     private readonly Label title = new();
     private readonly Label message = new();
     private readonly Label detail = new();
@@ -25,20 +26,20 @@ internal sealed class AlertForm : Form
     private readonly NotifyIcon trayIcon = new();
     private readonly ToolStripMenuItem statusItem = new("状态：等待游戏消息") { Enabled = false };
     private readonly ToolStripMenuItem historyMenu = new("最近提醒");
-    private readonly ToolStripMenuItem settingsMenu = new("设置");
+    private readonly ToolStripMenuItem settingsMenu = new("黑神话：悟空 · 游戏配置");
     private bool gamepadEnabled;
     private readonly System.Windows.Forms.Timer countdownTimer = new() { Interval = 100 };
     private readonly System.Windows.Forms.Timer gamepadTimer = new() { Interval = 50 };
     private readonly System.Windows.Forms.Timer gameWatchTimer = new() { Interval = 5000 };
     private readonly List<AlertEntry> history = new();
     private readonly Queue<AlertEntry> pendingAlerts = new();
-    private readonly long[] menuPressedAt = new long[4];
-    private readonly bool[] menuConsumed = new bool[4];
+    private readonly GamepadMenuGesture menuGesture = new();
     private string[] levels = Array.Empty<string>();
     private DetailForm? detailForm;
     private bool hotkeyRegistered;
     private string activeHotkey = "";
     private long dismissDeadline;
+    private IntPtr cachedGameWindow;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
@@ -46,8 +47,9 @@ internal sealed class AlertForm : Form
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool UnregisterHotKey(IntPtr window, int id);
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y,
+        int width, int height, uint flags);
 
     protected override bool ShowWithoutActivation => true;
     protected override CreateParams CreateParams
@@ -55,12 +57,13 @@ internal sealed class AlertForm : Form
         get
         {
             var parameters = base.CreateParams;
-            parameters.ExStyle |= WsExNoActivate;
+            // A passive layered toast must pass input to the game and never activate.
+            parameters.ExStyle |= WsExNoActivate | WsExLayered | WsExTransparent;
             return parameters;
         }
     }
 
-    internal AlertForm(bool exitWithGame = false)
+    internal AlertForm(bool exitWithGame = false, bool managedSession = false)
     {
         Text = "后悔药";
         FormBorderStyle = FormBorderStyle.None;
@@ -92,8 +95,6 @@ internal sealed class AlertForm : Form
         countdown.SetBounds(20, 127, 350, 24);
 
         Controls.AddRange(new Control[] { title, message, detail, countdown });
-        foreach (var control in new Control[] { this, title, message, detail, countdown })
-            control.Click += (_, _) => OpenDetail();
         Resize += (_, _) => SetRoundedRegion(this, 18);
         SetRoundedRegion(this, 18);
         var trayMenu = new ContextMenuStrip();
@@ -114,7 +115,7 @@ internal sealed class AlertForm : Form
         trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield;
         trayIcon.Text = "后悔药 · 游戏防遗漏提醒";
         trayIcon.ContextMenuStrip = trayMenu;
-        trayIcon.Visible = true;
+        trayIcon.Visible = !managedSession;
         LoadHistory();
         countdownTimer.Tick += (_, _) => UpdateCountdown();
         gamepadTimer.Tick += (_, _) => PollGamepadMenu();
@@ -204,8 +205,13 @@ internal sealed class AlertForm : Form
         var screen = Screen.FromHandle(GetGameWindowOrSelf()).Bounds;
         Location = new Point(screen.Left + (screen.Width - Width) / 2, screen.Top + 80);
         Opacity = 0.96;
+        var before = WindowFocus.GetForegroundWindow();
         Show();
-        BringToFront();
+        // BringToFront on a top-level Form can activate it. Raise without activation.
+        bool raised = SetWindowPos(Handle, new IntPtr(-1) /* HWND_TOPMOST */, 0, 0, 0, 0,
+            0x0001 | 0x0002 | 0x0010 /* NOSIZE | NOMOVE | NOACTIVATE */);
+        OverlayLog.Write($"toast shown window={Handle} foreground_before={before} "
+            + $"foreground_after={WindowFocus.GetForegroundWindow()} raised={raised}");
         StartInputListening();
         RestartCountdown();
     }
@@ -262,9 +268,19 @@ internal sealed class AlertForm : Form
 
     protected override void WndProc(ref Message message)
     {
+        if (message.Msg == 0x0021 /* WM_MOUSEACTIVATE */)
+        {
+            message.Result = new IntPtr(3); // MA_NOACTIVATE
+            return;
+        }
+        if (message.Msg == 0x0084 /* WM_NCHITTEST */)
+        {
+            message.Result = new IntPtr(-1); // HTTRANSPARENT
+            return;
+        }
         if (message.Msg == WmHotkey && message.WParam.ToInt32() == MoreHotkeyId)
         {
-            OpenDetail();
+            if (IsGameForeground()) OpenDetail("keyboard");
             return;
         }
         base.WndProc(ref message);
@@ -293,8 +309,7 @@ internal sealed class AlertForm : Form
     private void StopInputListening()
     {
         gamepadTimer.Stop();
-        Array.Clear(menuPressedAt);
-        Array.Clear(menuConsumed);
+        menuGesture.Reset();
         if (hotkeyRegistered && IsHandleCreated)
             UnregisterHotKey(Handle, MoreHotkeyId);
         hotkeyRegistered = false;
@@ -313,22 +328,13 @@ internal sealed class AlertForm : Form
     private void PollGamepadMenu()
     {
         if (!IsToastVisible || !gamepadEnabled) return;
-        long now = Stopwatch.GetTimestamp();
+        if (!IsGameForeground()) { menuGesture.Reset(); return; }
+        long now = Environment.TickCount64;
         for (uint index = 0; index < 4; index++)
         {
-            bool held = GamepadInput.TryGetButtons(index, out var buttons)
-                && (buttons & GamepadInput.Menu) != 0;
-            if (!held)
-            {
-                menuPressedAt[index] = 0;
-                menuConsumed[index] = false;
-                continue;
-            }
-            if (menuPressedAt[index] == 0) menuPressedAt[index] = now;
-            if (menuConsumed[index] || (now - menuPressedAt[index]) * 1000.0
-                / Stopwatch.Frequency < GamepadMenuHoldMilliseconds) continue;
-            menuConsumed[index] = true;
-            OpenDetail();
+            bool connected = GamepadInput.TryGetButtons(index, out var buttons);
+            if (!menuGesture.Update((int)index, connected, (buttons & GamepadInput.Menu) != 0, now)) continue;
+            OpenDetail("gamepad_menu_hold");
             return;
         }
     }
@@ -338,19 +344,21 @@ internal sealed class AlertForm : Form
         if (detailForm != null) { detailForm.Activate(); return; }
         string heading = entry.Id.StartsWith("hidden_", StringComparison.Ordinal)
             ? "后悔药  ·  隐藏地区提示" : "后悔药  ·  历史提醒";
-        ShowDetail(heading, entry.Levels);
+        ShowDetail(heading, entry.Levels, "history");
     }
 
-    private void OpenDetail()
+    private void OpenDetail(string origin)
     {
         if (!IsToastVisible) return;
-        ShowDetail(title.Text, levels);
+        ShowDetail(title.Text, levels, origin);
     }
 
-    private void ShowDetail(string heading, string[] spoilerLevels)
+    private void ShowDetail(string heading, string[] spoilerLevels, string origin)
     {
         var gameWindow = GetGameWindowOrSelf();
-        bool returnToGame = gameWindow != Handle && GetForegroundWindow() == gameWindow;
+        bool returnToGame = gameWindow != Handle && WindowFocus.IsForeground(gameWindow);
+        OverlayLog.Write($"detail requested origin={origin} game={gameWindow} "
+            + $"foreground={WindowFocus.GetForegroundWindow()} return_to_game={returnToGame}");
         var screen = Screen.FromHandle(gameWindow).Bounds;
         HideAlert(false);
         var dialog = new DetailForm(heading, spoilerLevels, screen, gameWindow, returnToGame);
@@ -366,9 +374,11 @@ internal sealed class AlertForm : Form
 
     private void HideAlert(bool showNext = true)
     {
+        bool wasVisible = IsToastVisible;
         countdownTimer.Stop();
         StopInputListening();
         Hide();
+        if (wasVisible) OverlayLog.Write($"toast hidden window={Handle} foreground={WindowFocus.GetForegroundWindow()}");
         if (showNext && !IsDisposed && pendingAlerts.Count > 0)
             BeginInvoke(new Action(ShowNextPending));
     }
@@ -419,9 +429,21 @@ internal sealed class AlertForm : Form
 
     private IntPtr GetGameWindowOrSelf()
     {
+        if (WindowFocus.IsWindow(cachedGameWindow)) return cachedGameWindow;
         var games = System.Diagnostics.Process.GetProcessesByName("b1-Win64-Shipping");
-        try { return games.FirstOrDefault()?.MainWindowHandle ?? Handle; }
+        try
+        {
+            foreach (var game in games)
+                if (game.MainWindowHandle != IntPtr.Zero) return cachedGameWindow = game.MainWindowHandle;
+            return Handle;
+        }
         finally { foreach (var game in games) game.Dispose(); }
+    }
+
+    private bool IsGameForeground()
+    {
+        var game = GetGameWindowOrSelf();
+        return game != Handle && WindowFocus.IsForeground(game);
     }
 
     private static void SignalLauncher(string eventName)

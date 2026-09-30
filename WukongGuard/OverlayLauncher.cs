@@ -17,7 +17,7 @@ namespace WukongGuard
                     TraceLog.Write("[WukongGuard] packaged overlay not found; start it separately for development");
                     return;
                 }
-                var start = new ProcessStartInfo(path, "--exit-with-game")
+                var start = new ProcessStartInfo(path, "--exit-with-game --managed-session")
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true,
